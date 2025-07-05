@@ -1,4 +1,4 @@
-# 👋 Hi there! I’m Alana Cavalcanti
+<img src="https://media.giphy.com/media/hvRJCLFzcasrR4ia7z/giphy.gif" width="30px"/> Hi there! I’m Alana Cavalcanti
 
 🎓 Software Engineering student @ UPE Garanhuns  
 💻 Python | Java | SQL | PostgreSQL  
