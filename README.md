@@ -1,8 +1,7 @@
 <img src="https://media.giphy.com/media/hvRJCLFzcasrR4ia7z/giphy.gif" width="30px"/> Hi there! I’m Alana Cavalcanti
 
-🎓 Software Engineering student - UPE Garanhuns  
-💻 Python | Java | SQL | PostgreSQL  
-✨ Interessada em desenvolvimento web, banco de dados e tecnologia em geral
+🎓 Software Engineering student - UPE Garanhuns    
+✨ Interessada em desenvolvimento front-end, integração com back-end e banco de dados, além de automação de processos e novas tecnologias.
 
 ---
 
