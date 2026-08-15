@@ -1,41 +1,38 @@
-name: Commit Garden
+name: Flower Contribution Garden
 
 on:
+  schedule:
+    - cron: "0 3 * * *"   
+  workflow_dispatch:        
   push:
     branches:
-      - '**'
-  schedule:
-    - cron: '0 6 * * *'   # roda toda madrugada às 06:00 UTC (ajuste se quiser)
-  workflow_dispatch:        # permite rodar manualmente pela aba Actions
+      - main
 
 permissions:
   contents: write
 
 jobs:
-  update-garden:
+  generate:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Checkout com histórico completo
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: main   # troque para "master" (ou outra) se essa não for sua branch padrão
-
-      - name: Buscar todas as branches remotas
-        run: git fetch --all
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Gerar o jardim
-        run: python scripts/generate_garden.py
+      - name: Gerar jardim de flores
+        env:
+          GITHUB_USERNAME: ${{ github.repository_owner }}
+        run: python scripts/generate_flower_garden.py
 
-      - name: Commitar o SVG atualizado
+      - name: Commitar SVG atualizado
         run: |
-          git config user.name "commit-garden-bot"
+          git config user.name "flower-garden-bot"
           git config user.email "actions@github.com"
-          git add assets/garden.svg
-          git diff --staged --quiet || git commit -m "🌱 atualiza commit garden"
+          git add assets/flower-garden.svg
+          git diff --staged --quiet || git commit -m "🌸 atualiza jardim de flores"
           git push
