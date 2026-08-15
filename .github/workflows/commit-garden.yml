@@ -1,0 +1,41 @@
+name: Commit Garden
+
+on:
+  push:
+    branches:
+      - '**'
+  schedule:
+    - cron: '0 6 * * *'   # roda toda madrugada às 06:00 UTC (ajuste se quiser)
+  workflow_dispatch:        # permite rodar manualmente pela aba Actions
+
+permissions:
+  contents: write
+
+jobs:
+  update-garden:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout com histórico completo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main   # troque para "master" (ou outra) se essa não for sua branch padrão
+
+      - name: Buscar todas as branches remotas
+        run: git fetch --all
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gerar o jardim
+        run: python scripts/generate_garden.py
+
+      - name: Commitar o SVG atualizado
+        run: |
+          git config user.name "commit-garden-bot"
+          git config user.email "actions@github.com"
+          git add assets/garden.svg
+          git diff --staged --quiet || git commit -m "🌱 atualiza commit garden"
+          git push
