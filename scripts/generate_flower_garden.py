@@ -73,8 +73,16 @@ def build_svg(weeks, username):
     width = PAD_LEFT + cols * (CELL + GAP)
     height = PAD_TOP + 7 * (CELL + GAP) + 6
 
-    STEP = 0.35
-    FADE_IN = 1.2
+    STEP = 0.5
+    BLOOM = 1.5
+    HOLD = 6.0
+    RESET = 3.0
+
+    max_delay = (cols - 1) * STEP if cols > 1 else 0
+    DURATION = round(max_delay + BLOOM + HOLD + RESET, 3)
+
+    bloom_pct = round((BLOOM / DURATION) * 100, 3)
+    reset_start_pct = round(((DURATION - RESET) / DURATION) * 100, 3)
 
     months = month_labels_for(weeks)
 
@@ -89,14 +97,15 @@ def build_svg(weeks, username):
       .flower {{
         opacity: 0;
         animation-name: appear;
-        animation-duration: {FADE_IN}s;
-        animation-timing-function: ease-out;
-        animation-iteration-count: 1;
-        animation-fill-mode: forwards;
+        animation-duration: {DURATION}s;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
       }}
       @keyframes appear {{
-        from {{ opacity: 0; }}
-        to   {{ opacity: 1; }}
+        0% {{ opacity: 0; }}
+        {bloom_pct}% {{ opacity: 1; }}
+        {reset_start_pct}% {{ opacity: 1; }}
+        100% {{ opacity: 0; }}
       }}
     </style>
     <rect width="{width}" height="{height}" fill="{BG_COLOR}"/>
