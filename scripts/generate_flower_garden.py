@@ -1,12 +1,4 @@
-#!/usr/bin/env python3
-"""
-Flower Contribution Garden - transforma o gráfico REAL de contribuições do GitHub
-em um jardim animado: cada dia com commit(s) desabrocha em uma flor.
 
-Fonte dos dados: API pública (não-oficial, sem necessidade de token) que espelha
-o gráfico de contribuições do seu perfil:
-https://github-contributions-api.jogruber.de
-"""
 import json
 import os
 import sys
@@ -15,7 +7,6 @@ from datetime import datetime
 
 API_URL = "https://github-contributions-api.jogruber.de/v4/{user}?y=last"
 
-# emoji por nível de contribuição (0 = sem commit no dia, 4 = dia bem cheio)
 LEVEL_EMOJI = {
     0: None,   # sem commit -> só um pontinho de terra
     1: "🌱",
@@ -54,11 +45,8 @@ def build_svg(weeks, username):
     width = PAD_LEFT + cols * (CELL + GAP)
     height = PAD_TOP + 7 * (CELL + GAP) + 10
 
-    # cada coluna (semana) floresce STEP segundos depois da anterior;
-    # DURATION é o tempo total de um ciclo completo antes de reiniciar do zero.
-    STEP = 0.06
-    max_delay = (cols - 1) * STEP
-    DURATION = round(max_delay + 3.0, 2)  # sobra ~3s pro florescer + murchar + reiniciar
+    STEP = 0.08
+    FADE_IN = 0.35  
 
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
@@ -75,20 +63,15 @@ def build_svg(weeks, username):
       <style>
         .cell {{
           opacity: 0;
-          transform-box: fill-box;
-          transform-origin: center;
-          animation-name: bloom;
-          animation-duration: {DURATION}s;
-          animation-timing-function: ease-in-out;
-          animation-iteration-count: infinite;
+          animation-name: appear;
+          animation-duration: {FADE_IN}s;
+          animation-timing-function: ease-out;
+          animation-iteration-count: 1;
+          animation-fill-mode: forwards;
         }}
-        @keyframes bloom {{
-          0%   {{ opacity: 0; transform: scale(0.2); }}
-          4%   {{ opacity: 1; transform: scale(1.2); }}
-          8%   {{ opacity: 1; transform: scale(1); }}
-          85%  {{ opacity: 1; transform: scale(1); }}
-          92%  {{ opacity: 0; transform: scale(0.3); }}
-          100% {{ opacity: 0; transform: scale(0.3); }}
+        @keyframes appear {{
+          from {{ opacity: 0; }}
+          to   {{ opacity: 1; }}
         }}
       </style>
     </defs>
@@ -106,7 +89,7 @@ def build_svg(weeks, username):
 
     for col, week in enumerate(weeks):
         x = PAD_LEFT + col * (CELL + GAP)
-        delay = round(col * STEP, 3)  # floresce da esquerda pra direita, e o ciclo se repete pra sempre
+        delay = round(col * STEP, 3)  # aparece da esquerda pra direita, uma vez só
         style = f'style="animation-delay:{delay}s"'
         for row, day in enumerate(week):
             y = PAD_TOP + row * (CELL + GAP)
