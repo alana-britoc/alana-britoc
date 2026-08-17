@@ -1,4 +1,3 @@
-
 import json
 import os
 import sys
@@ -7,7 +6,6 @@ from datetime import datetime
 
 API_URL = "https://github-contributions-api.jogruber.de/v4/{user}?y=last"
 
-# emoji só nos dias com commit
 LEVEL_EMOJI = {
     0: None,
     1: "🌱",
@@ -16,7 +14,6 @@ LEVEL_EMOJI = {
     4: "🌸",
 }
 
-# paleta EXATA do GitHub no tema escuro (padrão verde)
 LEVEL_COLOR = {
     0: "#161b22",
     1: "#0e4429",
@@ -25,8 +22,8 @@ LEVEL_COLOR = {
     4: "#39d353",
 }
 
-BG_COLOR = "#0d1117"        # fundo escuro do GitHub
-TEXT_COLOR = "#7d8590"      # cor dos labels de mês/dia no tema escuro
+BG_COLOR = "#0d1117"
+TEXT_COLOR = "#7d8590"
 
 CELL = 10
 GAP = 3
@@ -47,19 +44,15 @@ def fetch_contributions(username: str):
 
 
 def build_weeks(contributions):
-    """Agrupa os dias (lista ordenada) em semanas de 7 dias (dom-sáb),
-    preenchendo o início com None para alinhar com o dia da semana certo."""
     if not contributions:
         return []
     first_date = datetime.strptime(contributions[0]["date"], "%Y-%m-%d")
-    lead_empty = (first_date.weekday() + 1) % 7  # 0 = domingo
+    lead_empty = (first_date.weekday() + 1) % 7
     days = [None] * lead_empty + contributions
     return [days[i:i + 7] for i in range(0, len(days), 7)]
 
 
 def month_labels_for(weeks):
-    """Retorna {col_index: 'Mmm'} para a primeira coluna em que cada mês aparece,
-    evitando labels grudados demais um no outro."""
     labels = {}
     last_month = None
     last_col_used = -999
@@ -80,8 +73,8 @@ def build_svg(weeks, username):
     width = PAD_LEFT + cols * (CELL + GAP)
     height = PAD_TOP + 7 * (CELL + GAP) + 6
 
-    STEP = 0.05        # intervalo entre o aparecimento de cada coluna
-    FADE_IN = 0.3       # duração do fade individual de cada flor
+    STEP = 0.35
+    FADE_IN = 1.2
 
     months = month_labels_for(weeks)
 
@@ -109,12 +102,10 @@ def build_svg(weeks, username):
     <rect width="{width}" height="{height}" fill="{BG_COLOR}"/>
     ''')
 
-    # labels de mês
     for col, label in months.items():
         x = PAD_LEFT + col * (CELL + GAP)
         parts.append(f'<text x="{x}" y="12" font-size="9" fill="{TEXT_COLOR}">{label}</text>')
 
-    # labels de dia da semana (Seg, Qua, Sex — igual ao GitHub)
     day_labels = ["", "Seg", "", "Qua", "", "Sex", ""]
     for row, label in enumerate(day_labels):
         if label:
@@ -131,13 +122,11 @@ def build_svg(weeks, username):
             level = day.get("level", 0)
             color = LEVEL_COLOR.get(level, LEVEL_COLOR[0])
 
-            # quadradinho igual ao do GitHub, sempre presente
             parts.append(
                 f'<rect x="{x}" y="{y}" width="{CELL}" height="{CELL}" '
                 f'rx="{RADIUS}" ry="{RADIUS}" fill="{color}"/>'
             )
 
-            # flor por cima, só em dias com commit
             emoji = LEVEL_EMOJI.get(level)
             if emoji:
                 cx, cy = x + CELL / 2, y + CELL / 2
