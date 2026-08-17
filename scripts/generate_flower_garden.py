@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Flower Contribution Garden - transforma o gráfico REAL de contribuições do GitHub
 em um jardim animado: cada dia com commit(s) desabrocha em uma flor.
@@ -14,16 +15,14 @@ from datetime import datetime
 
 API_URL = "https://github-contributions-api.jogruber.de/v4/{user}?y=last"
 
-
+# emoji por nível de contribuição (0 = sem commit no dia, 4 = dia bem cheio)
 LEVEL_EMOJI = {
-    0: None,   
-    1: "🪻",
-    2: "🏵️",
+    0: None,   # sem commit -> só um pontinho de terra
+    1: "🌱",
+    2: "🌿",
     3: "🌷",
-    4: "🌼",
+    4: "🌸",
 }
-
-
 
 CELL = 15
 GAP = 3
@@ -55,6 +54,12 @@ def build_svg(weeks, username):
     width = PAD_LEFT + cols * (CELL + GAP)
     height = PAD_TOP + 7 * (CELL + GAP) + 10
 
+    # cada coluna (semana) floresce STEP segundos depois da anterior;
+    # DURATION é o tempo total de um ciclo completo antes de reiniciar do zero.
+    STEP = 0.06
+    max_delay = (cols - 1) * STEP
+    DURATION = round(max_delay + 3.0, 2)  # sobra ~3s pro florescer + murchar + reiniciar
+
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
         f'viewBox="0 0 {width} {height}" '
@@ -67,6 +72,25 @@ def build_svg(weeks, username):
         <stop offset="0%" stop-color="#f6fff4"/>
         <stop offset="100%" stop-color="#eafbe6"/>
       </linearGradient>
+      <style>
+        .cell {{
+          opacity: 0;
+          transform-box: fill-box;
+          transform-origin: center;
+          animation-name: bloom;
+          animation-duration: {DURATION}s;
+          animation-timing-function: ease-in-out;
+          animation-iteration-count: infinite;
+        }}
+        @keyframes bloom {{
+          0%   {{ opacity: 0; transform: scale(0.2); }}
+          4%   {{ opacity: 1; transform: scale(1.2); }}
+          8%   {{ opacity: 1; transform: scale(1); }}
+          85%  {{ opacity: 1; transform: scale(1); }}
+          92%  {{ opacity: 0; transform: scale(0.3); }}
+          100% {{ opacity: 0; transform: scale(0.3); }}
+        }}
+      </style>
     </defs>
     <rect width="{width}" height="{height}" rx="12" fill="url(#bg)"/>
     <text x="{PAD_LEFT}" y="20" font-size="13" fill="#2f4f2f" font-weight="bold">
@@ -82,7 +106,8 @@ def build_svg(weeks, username):
 
     for col, week in enumerate(weeks):
         x = PAD_LEFT + col * (CELL + GAP)
-        delay = round(col * 0.035, 3)  
+        delay = round(col * STEP, 3)  # floresce da esquerda pra direita, e o ciclo se repete pra sempre
+        style = f'style="animation-delay:{delay}s"'
         for row, day in enumerate(week):
             y = PAD_TOP + row * (CELL + GAP)
             if day is None:
@@ -93,21 +118,13 @@ def build_svg(weeks, username):
 
             if emoji is None:
                 parts.append(
-                    f'<circle cx="{cx}" cy="{cy}" r="0" fill="#d9d0c3">'
-                    f'<animate attributeName="r" from="0" to="2.3" '
-                    f'begin="{delay}s" dur="0.4s" fill="freeze"/>'
-                    f'</circle>'
+                    f'<circle class="cell" {style} cx="{cx}" cy="{cy}" r="2.3" fill="#d9d0c3"/>'
                 )
             else:
-                size = 10 + level * 2  
+                size = 10 + level * 2  # flores maiores em dias mais cheios de commits
                 parts.append(
-                    f'<text x="{cx}" y="{cy}" font-size="0" text-anchor="middle" '
-                    f'dominant-baseline="central" opacity="0">{emoji}'
-                    f'<animate attributeName="font-size" from="0" to="{size}" '
-                    f'begin="{delay}s" dur="0.5s" fill="freeze"/>'
-                    f'<animate attributeName="opacity" from="0" to="1" '
-                    f'begin="{delay}s" dur="0.5s" fill="freeze"/>'
-                    f'</text>'
+                    f'<text class="cell" {style} x="{cx}" y="{cy}" font-size="{size}" '
+                    f'text-anchor="middle" dominant-baseline="central">{emoji}</text>'
                 )
 
     parts.append("</svg>")
