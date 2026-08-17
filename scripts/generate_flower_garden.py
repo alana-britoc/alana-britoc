@@ -8,8 +8,8 @@ API_URL = "https://github-contributions-api.jogruber.de/v4/{user}?y=last"
 
 LEVEL_EMOJI = {
     0: None,
-    1: "🌱",
-    2: "🌿",
+    1: "🪻",
+    2: "🌼",
     3: "🌷",
     4: "🌸",
 }
