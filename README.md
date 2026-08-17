@@ -103,6 +103,16 @@ class AlanaBrito:
 
 <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif">
 
+## 🌸 Meu jardim de contribuições
+
+<div align="center">
+  <img src="./assets/flower-garden.svg" alt="Flower Contribution Garden" width="100%"/>
+</div>
+
+<p align="center"><i>Cada dia com commit desabrocha em uma flor — quanto mais commits, maior ela fica 🌱🌿🌷🌸</i></p>
+
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif">
+
 ## 📫 Let's connect!
 
 <div align="center">
