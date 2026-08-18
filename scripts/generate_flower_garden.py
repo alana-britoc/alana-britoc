@@ -1,26 +1,15 @@
 import json
 import os
+import random
 import sys
 import urllib.request
 from datetime import datetime
 
 API_URL = "https://github-contributions-api.jogruber.de/v4/{user}?y=last"
 
-LEVEL_EMOJI = {
-    0: None,
-    1: "🪻",
-    2: "🌼",
-    3: "🌷",
-    4: "🌸",
-}
+FLOWER_EMOJIS = ["🌸", "🌷", "🌻", "🌺", "🌹", "🏵️", "🌼", "💐", "🪷", "🪻"]
 
-LEVEL_COLOR = {
-    0: "#161b22",
-    1: "#0e4429",
-    2: "#006d32",
-    3: "#26a641",
-    4: "#39d353",
-}
+EMPTY_COLOR = "#161b22"
 
 BG_COLOR = "#0d1117"
 TEXT_COLOR = "#7d8590"
@@ -66,6 +55,10 @@ def month_labels_for(weeks):
             last_month = month
             last_col_used = col
     return labels
+
+
+def pick_flower(date_str):
+    return random.Random(date_str).choice(FLOWER_EMOJIS)
 
 
 def build_svg(weeks, username):
@@ -129,15 +122,14 @@ def build_svg(weeks, username):
             if day is None:
                 continue
             level = day.get("level", 0)
-            color = LEVEL_COLOR.get(level, LEVEL_COLOR[0])
 
             parts.append(
                 f'<rect x="{x}" y="{y}" width="{CELL}" height="{CELL}" '
-                f'rx="{RADIUS}" ry="{RADIUS}" fill="{color}"/>'
+                f'rx="{RADIUS}" ry="{RADIUS}" fill="{EMPTY_COLOR}"/>'
             )
 
-            emoji = LEVEL_EMOJI.get(level)
-            if emoji:
+            if level > 0:
+                emoji = pick_flower(day["date"])
                 cx, cy = x + CELL / 2, y + CELL / 2
                 parts.append(
                     f'<text class="flower" style="animation-delay:{delay}s" '
