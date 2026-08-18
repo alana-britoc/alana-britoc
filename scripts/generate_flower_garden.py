@@ -92,28 +92,8 @@ def month_labels_for(weeks):
     return labels
 
 
-def pick_flower(date_str, commit_index):
-    """
-    Escolhe uma flor de forma determinística.
-
-    O índice do commit também participa da escolha,
-    para que vários commits possam gerar flores diferentes.
-    """
-
-    seed = f"{date_str}-{commit_index}"
-
-    return random.Random(seed).choice(FLOWER_EMOJIS)
-
-
-def count_total_commits(contributions):
-    """
-    Soma todos os commits do período.
-    """
-
-    return sum(
-        day.get("count", 0)
-        for day in contributions
-    )
+def pick_flower(date_str):
+    return random.Random(date_str).choice(FLOWER_EMOJIS)
 
 
 def build_svg(weeks, username):
@@ -121,74 +101,50 @@ def build_svg(weeks, username):
     cols = len(weeks)
 
     width = PAD_LEFT + cols * (CELL + GAP)
-
     height = PAD_TOP + 7 * (CELL + GAP) + 6
 
-    # =========================================================
-    # CONFIGURAÇÃO DA ANIMAÇÃO
-    # =========================================================
 
-    # Quanto tempo uma flor leva para aparecer.
     BLOOM = 1.5
 
-    # Quanto tempo ela permanece completamente visível.
     HOLD = 1.0
 
-    # Quanto tempo leva para desaparecer.
     RESET = 1.0
 
-    # Intervalo entre uma flor e outra.
-    #
-    # É maior que BLOOM, portanto:
-    #
-    # Flor 1 termina de aparecer
-    # ↓
-    # pequena pausa
-    # ↓
-    # Flor 2 começa
+
     STEP = 1.8
 
-    # =========================================================
-    # CONTA OS COMMITS
-    # =========================================================
 
-    all_days = [
+    commit_days = [
         day
         for week in weeks
         for day in week
-        if day is not None
+        if day is not None and day.get("level", 0) > 0
     ]
 
-    total_commits = count_total_commits(all_days)
+    flower_count = len(commit_days)
 
-    # =========================================================
-    # DURAÇÃO TOTAL
-    # =========================================================
-
-    if total_commits > 0:
-
-        max_delay = (
-            (total_commits - 1) * STEP
-        )
-
-        DURATION = (
-            max_delay
-            + BLOOM
-            + HOLD
-            + RESET
-        )
-
+    if flower_count > 0:
+        max_delay = (flower_count - 1) * STEP
     else:
+        max_delay = 0
 
-        DURATION = BLOOM + HOLD + RESET
+    DURATION = round(
+        max_delay + BLOOM + HOLD + RESET,
+        3
+    )
 
-    DURATION = round(DURATION, 3)
+
+    bloom_pct = (
+        BLOOM / DURATION
+    ) * 100
+
+    hold_end_pct = (
+        (BLOOM + HOLD) / DURATION
+    ) * 100
+
 
     months = month_labels_for(weeks)
 
-    # =========================================================
-    # SVG
-    # =========================================================
 
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" '
@@ -199,11 +155,57 @@ def build_svg(weeks, username):
     ]
 
     # =========================================================
-    # FUNDO
+    # CSS
     # =========================================================
 
     parts.append(
         f'''
+        <style>
+
+            .flower {{
+                opacity: 0;
+
+                animation-name: bloom;
+
+                animation-duration: {DURATION}s;
+
+                animation-timing-function: ease-in-out;
+
+                animation-iteration-count: infinite;
+
+                animation-fill-mode: both;
+
+                transform-box: fill-box;
+
+                transform-origin: center;
+            }}
+
+            @keyframes bloom {{
+
+                0% {{
+                    opacity: 0;
+                    transform: scale(0.2);
+                }}
+
+                {bloom_pct:.3f}% {{
+                    opacity: 1;
+                    transform: scale(1);
+                }}
+
+                {hold_end_pct:.3f}% {{
+                    opacity: 1;
+                    transform: scale(1);
+                }}
+
+                100% {{
+                    opacity: 0;
+                    transform: scale(0.2);
+                }}
+
+            }}
+
+        </style>
+
         <rect
             width="{width}"
             height="{height}"
@@ -211,10 +213,6 @@ def build_svg(weeks, username):
         />
         '''
     )
-
-    # =========================================================
-    # MESES
-    # =========================================================
 
     for col, label in months.items():
 
@@ -230,9 +228,6 @@ def build_svg(weeks, username):
             f'</text>'
         )
 
-    # =========================================================
-    # DIAS DA SEMANA
-    # =========================================================
 
     day_labels = [
         "",
@@ -265,11 +260,8 @@ def build_svg(weeks, username):
                 f'</text>'
             )
 
-    # =========================================================
-    # FLORES
-    # =========================================================
 
-    commit_index = 0
+    flower_index = 0
 
     for col, week in enumerate(weeks):
 
@@ -282,9 +274,8 @@ def build_svg(weeks, username):
             if day is None:
                 continue
 
-            # -------------------------------------------------
-            # QUADRADO DE FUNDO
-            # -------------------------------------------------
+            level = day.get("level", 0)
+
 
             parts.append(
                 f'<rect '
@@ -298,124 +289,47 @@ def build_svg(weeks, username):
             )
 
             # -------------------------------------------------
-            # QUANTIDADE DE COMMITS NESSE DIA
+            # DIA COM COMMIT
             # -------------------------------------------------
 
-            count = day.get("count", 0)
+            if level > 0:
 
-            if count <= 0:
-                continue
+                emoji = pick_flower(day["date"])
 
-            cx = x + CELL / 2
-            cy = y + CELL / 2
+                cx = x + CELL / 2
+                cy = y + CELL / 2
 
-            # -------------------------------------------------
-            # UMA FLOR PARA CADA COMMIT
-            # -------------------------------------------------
+                # Cada DIA com commit recebe
+                # exatamente uma flor.
+                #
+                # Não importa quantos commits foram
+                # feitos naquele dia.
 
-            for commit_number in range(count):
-
-                emoji = pick_flower(
-                    day["date"],
-                    commit_number
-                )
-
-                # Delay baseado no COMMIT,
-                # e não na semana.
                 delay = round(
-                    commit_index * STEP,
+                    flower_index * STEP,
                     3
                 )
 
-                # -------------------------------------------------
-                # CADA FLOR TEM SUA PRÓPRIA ANIMAÇÃO
-                # -------------------------------------------------
-
                 parts.append(
-                    f'''
-                    <text
-                        x="{cx}"
-                        y="{cy}"
-                        font-size="{CELL}"
-                        text-anchor="middle"
-                        dominant-baseline="central"
-                        opacity="0"
-                        style="
-                            animation-name: bloom;
-                            animation-duration: {DURATION}s;
-                            animation-delay: {delay}s;
-                            animation-timing-function: ease-in-out;
-                            animation-iteration-count: infinite;
-                            animation-fill-mode: both;
-                        "
-                    >{emoji}</text>
-                    '''
+                    f'<text '
+                    f'class="flower" '
+                    f'style="animation-delay:{delay}s" '
+                    f'x="{cx}" '
+                    f'y="{cy}" '
+                    f'font-size="{CELL}" '
+                    f'text-anchor="middle" '
+                    f'dominant-baseline="central">'
+                    f'{emoji}'
+                    f'</text>'
                 )
 
-                commit_index += 1
+                # Próximo dia com commit
+                # = próxima flor.
+                flower_index += 1
 
     # =========================================================
-    # ANIMAÇÃO
+    # FINALIZA
     # =========================================================
-
-    bloom_pct = (
-        BLOOM / DURATION
-    ) * 100
-
-    hold_start_pct = (
-        (BLOOM + HOLD) / DURATION
-    ) * 100
-
-    reset_start_pct = (
-        (BLOOM + HOLD) / DURATION
-    ) * 100
-
-    parts.insert(
-        1,
-        f'''
-        <style>
-
-            /*
-             * Cada flor possui a MESMA animação,
-             * mas um animation-delay diferente.
-             *
-             * Exemplo:
-             *
-             * Flor 1 = 0s
-             * Flor 2 = 1.8s
-             * Flor 3 = 3.6s
-             * Flor 4 = 5.4s
-             *
-             * Portanto elas não surgem em uma linha.
-             */
-
-            @keyframes bloom {{
-
-                0% {{
-                    opacity: 0;
-                    transform: scale(0.2);
-                }}
-
-                {bloom_pct:.3f}% {{
-                    opacity: 1;
-                    transform: scale(1);
-                }}
-
-                {hold_start_pct:.3f}% {{
-                    opacity: 1;
-                    transform: scale(1);
-                }}
-
-                100% {{
-                    opacity: 0;
-                    transform: scale(0.2);
-                }}
-
-            }}
-
-        </style>
-        '''
-    )
 
     parts.append("</svg>")
 
