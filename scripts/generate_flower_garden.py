@@ -104,7 +104,6 @@ def build_svg(weeks, username):
     height = PAD_TOP + 7 * (CELL + GAP) + 6
 
     BLOOM = 1.5
-    HOLD = 1.0
     RESET = 1.0
     STEP = 1.8
 
@@ -122,13 +121,9 @@ def build_svg(weeks, username):
     else:
         max_delay = 0
 
-    DURATION = round(
-        max_delay + BLOOM + HOLD + RESET,
-        3
-    )
+    DURATION = round(max_delay + BLOOM + RESET, 3)
 
-    bloom_pct = (BLOOM / DURATION) * 100
-    hold_end_pct = ((BLOOM + HOLD) / DURATION) * 100
+    hold_end_pct = ((DURATION - RESET) / DURATION) * 100
 
     months = month_labels_for(weeks)
 
@@ -140,59 +135,14 @@ def build_svg(weeks, username):
         f'font-family="-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif">'
     ]
 
+    flower_keyframes = []
+
     parts.append(
-        f'''
-        <style>
-
-            .flower {{
-                opacity: 0;
-                animation-name: bloom;
-                animation-duration: {DURATION}s;
-                animation-timing-function: ease-in-out;
-                animation-iteration-count: infinite;
-                animation-fill-mode: both;
-                transform-box: fill-box;
-                transform-origin: center;
-            }}
-
-            @keyframes bloom {{
-
-                0% {{
-                    opacity: 0;
-                    transform: scale(0.2);
-                }}
-
-                {bloom_pct:.3f}% {{
-                    opacity: 1;
-                    transform: scale(1);
-                }}
-
-                {hold_end_pct:.3f}% {{
-                    opacity: 1;
-                    transform: scale(1);
-                }}
-
-                100% {{
-                    opacity: 0;
-                    transform: scale(0.2);
-                }}
-
-            }}
-
-        </style>
-
-        <rect
-            width="{width}"
-            height="{height}"
-            fill="{BG_COLOR}"
-        />
-        '''
+        f'<rect width="{width}" height="{height}" fill="{BG_COLOR}"/>'
     )
 
     for col, label in months.items():
-
         x = PAD_LEFT + col * (CELL + GAP)
-
         parts.append(
             f'<text '
             f'x="{x}" '
@@ -203,27 +153,11 @@ def build_svg(weeks, username):
             f'</text>'
         )
 
-    day_labels = [
-        "",
-        "Seg",
-        "",
-        "Qua",
-        "",
-        "Sex",
-        ""
-    ]
+    day_labels = ["", "Seg", "", "Qua", "", "Sex", ""]
 
     for row, label in enumerate(day_labels):
-
         if label:
-
-            y = (
-                PAD_TOP
-                + row * (CELL + GAP)
-                + CELL
-                - 2
-            )
-
+            y = PAD_TOP + row * (CELL + GAP) + CELL - 2
             parts.append(
                 f'<text '
                 f'x="0" '
@@ -234,14 +168,13 @@ def build_svg(weeks, username):
                 f'</text>'
             )
 
+    body_parts = []
     flower_index = 0
 
     for col, week in enumerate(weeks):
-
         x = PAD_LEFT + col * (CELL + GAP)
 
         for row, day in enumerate(week):
-
             y = PAD_TOP + row * (CELL + GAP)
 
             if day is None:
@@ -249,7 +182,7 @@ def build_svg(weeks, username):
 
             level = day.get("level", 0)
 
-            parts.append(
+            body_parts.append(
                 f'<rect '
                 f'x="{x}" '
                 f'y="{y}" '
@@ -263,19 +196,35 @@ def build_svg(weeks, username):
             if level > 0:
 
                 emoji = pick_flower(day["date"])
-
                 cx = x + CELL / 2
                 cy = y + CELL / 2
 
-                delay = -round(
-                    (flower_index * STEP) % DURATION,
-                    3
+                anim_name = f"bloom{flower_index}"
+
+                start_pct = round((flower_index * STEP) / DURATION * 100, 3)
+                grow_end_pct = round(
+                    (flower_index * STEP + BLOOM) / DURATION * 100, 3
+                )
+                grow_end_pct = min(grow_end_pct, hold_end_pct)
+
+                flower_keyframes.append(
+                    f'''
+                    @keyframes {anim_name} {{
+                        0% {{ opacity: 0; transform: scale(0.2); }}
+                        {start_pct}% {{ opacity: 0; transform: scale(0.2); }}
+                        {grow_end_pct}% {{ opacity: 1; transform: scale(1); }}
+                        {hold_end_pct:.3f}% {{ opacity: 1; transform: scale(1); }}
+                        100% {{ opacity: 0; transform: scale(0.2); }}
+                    }}
+                    '''
                 )
 
-                parts.append(
+                body_parts.append(
                     f'<text '
-                    f'class="flower" '
-                    f'style="animation-delay:{delay}s" '
+                    f'style="'
+                    f'transform-box:fill-box;'
+                    f'transform-origin:center;'
+                    f'animation:{anim_name} {DURATION}s ease-in-out infinite;" '
                     f'x="{cx}" '
                     f'y="{cy}" '
                     f'font-size="{CELL}" '
@@ -287,6 +236,8 @@ def build_svg(weeks, username):
 
                 flower_index += 1
 
+    parts.append(f'<style>{"".join(flower_keyframes)}</style>')
+    parts.extend(body_parts)
     parts.append("</svg>")
 
     return "".join(parts)
@@ -296,43 +247,24 @@ def main():
 
     username = (
         os.environ.get("GITHUB_USERNAME")
-        or (
-            sys.argv[1]
-            if len(sys.argv) > 1
-            else None
-        )
+        or (sys.argv[1] if len(sys.argv) > 1 else None)
     )
 
     if not username:
-
         print(
             "Defina a variável de ambiente "
             "GITHUB_USERNAME ou passe o usuário "
             "como argumento."
         )
-
         sys.exit(1)
 
     contributions = fetch_contributions(username)
-
     weeks = build_weeks(contributions)
+    svg = build_svg(weeks, username)
 
-    svg = build_svg(
-        weeks,
-        username
-    )
+    os.makedirs("assets", exist_ok=True)
 
-    os.makedirs(
-        "assets",
-        exist_ok=True
-    )
-
-    with open(
-        "assets/flower-garden.svg",
-        "w",
-        encoding="utf-8"
-    ) as f:
-
+    with open("assets/flower-garden.svg", "w", encoding="utf-8") as f:
         f.write(svg)
 
     print(
