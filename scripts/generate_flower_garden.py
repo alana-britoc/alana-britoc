@@ -83,7 +83,7 @@ def month_labels_for(weeks):
             "%Y-%m-%d"
         ).month
 
-        if month != last_month and (col - last_col_used) >= 3:
+        if month != last_month and (col - last_col_used) >= 2:
             labels[col] = MONTH_ABBR[month - 1]
 
             last_month = month
@@ -103,16 +103,10 @@ def build_svg(weeks, username):
     width = PAD_LEFT + cols * (CELL + GAP)
     height = PAD_TOP + 7 * (CELL + GAP) + 6
 
-
     BLOOM = 1.5
-
     HOLD = 1.0
-
     RESET = 1.0
-
-
     STEP = 1.8
-
 
     commit_days = [
         day
@@ -133,18 +127,10 @@ def build_svg(weeks, username):
         3
     )
 
-
-    bloom_pct = (
-        BLOOM / DURATION
-    ) * 100
-
-    hold_end_pct = (
-        (BLOOM + HOLD) / DURATION
-    ) * 100
-
+    bloom_pct = (BLOOM / DURATION) * 100
+    hold_end_pct = ((BLOOM + HOLD) / DURATION) * 100
 
     months = month_labels_for(weeks)
-
 
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" '
@@ -154,29 +140,18 @@ def build_svg(weeks, username):
         f'font-family="-apple-system,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif">'
     ]
 
-    # =========================================================
-    # CSS
-    # =========================================================
-
     parts.append(
         f'''
         <style>
 
             .flower {{
                 opacity: 0;
-
                 animation-name: bloom;
-
                 animation-duration: {DURATION}s;
-
                 animation-timing-function: ease-in-out;
-
                 animation-iteration-count: infinite;
-
                 animation-fill-mode: both;
-
                 transform-box: fill-box;
-
                 transform-origin: center;
             }}
 
@@ -228,7 +203,6 @@ def build_svg(weeks, username):
             f'</text>'
         )
 
-
     day_labels = [
         "",
         "Seg",
@@ -260,7 +234,6 @@ def build_svg(weeks, username):
                 f'</text>'
             )
 
-
     flower_index = 0
 
     for col, week in enumerate(weeks):
@@ -276,7 +249,6 @@ def build_svg(weeks, username):
 
             level = day.get("level", 0)
 
-
             parts.append(
                 f'<rect '
                 f'x="{x}" '
@@ -288,10 +260,6 @@ def build_svg(weeks, username):
                 f'fill="{EMPTY_COLOR}"/>'
             )
 
-            # -------------------------------------------------
-            # DIA COM COMMIT
-            # -------------------------------------------------
-
             if level > 0:
 
                 emoji = pick_flower(day["date"])
@@ -299,14 +267,8 @@ def build_svg(weeks, username):
                 cx = x + CELL / 2
                 cy = y + CELL / 2
 
-                # Cada DIA com commit recebe
-                # exatamente uma flor.
-                #
-                # Não importa quantos commits foram
-                # feitos naquele dia.
-
-                delay = round(
-                    flower_index * STEP,
+                delay = -round(
+                    (flower_index * STEP) % DURATION,
                     3
                 )
 
@@ -323,13 +285,7 @@ def build_svg(weeks, username):
                     f'</text>'
                 )
 
-                # Próximo dia com commit
-                # = próxima flor.
                 flower_index += 1
-
-    # =========================================================
-    # FINALIZA
-    # =========================================================
 
     parts.append("</svg>")
 
