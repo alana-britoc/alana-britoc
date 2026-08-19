@@ -104,12 +104,10 @@ class AlanaBrito:
 <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif">
 
 ## 🌸 My garden of contributions
-
 <div align="center">
   <img src="./assets/flower-garden.svg" alt="Flower Contribution Garden" width="100%"/>
 </div>
-
-<p align="center"><i>Each day with a commit blossoms into a flower, the more commits, the larger it grows. 🌱🌿🌷🌸</i></p>
+<p align="center"><i>Each day with a commit blossoms into a flower. 🌸🌷🌻🌺🌹</i></p>
 
 <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif">
 
